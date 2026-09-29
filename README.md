@@ -1,2 +1,2 @@
 # python-sdk
-Python SDK
+PredictFlow Python SDK
