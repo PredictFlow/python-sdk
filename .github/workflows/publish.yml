@@ -1,0 +1,63 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - run: pip install build
+
+      # Catches the easy mistake: tagging v0.2.0 while pyproject.toml
+      # still says 0.1.0 would publish a version to PyPI that doesn't
+      # match the git tag it supposedly came from.
+      - name: Verify tag matches pyproject.toml version
+        run: |
+          PKG_VERSION="v$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
+          TAG_VERSION="${GITHUB_REF#refs/tags/}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "Tag $TAG_VERSION does not match pyproject.toml version $PKG_VERSION"
+            exit 1
+          fi
+
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: pytest
+      - run: mypy src/predictflow
+
+      - run: python -m build
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  # A separate job, deliberately - it's the only one with id-token: write
+  # and the only one PyPI's trusted-publisher trust relationship applies
+  # to. Keeping build/test steps (which run arbitrary project code) out
+  # of this job limits what a compromised dependency could ever reach.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
