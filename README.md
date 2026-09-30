@@ -118,6 +118,10 @@ Per-call overrides work the same way on every resource method via the underlying
 
 Every method's *parameters* are fully typed and checked by `mypy --strict`. Response *bodies* are typed as plain `dict[str, Any]` / `list[dict[str, Any]]` rather than full per-endpoint schemas, on purpose: adding a dependency like `pydantic` (or hand-written `TypedDict`s for ~70 endpoints) to validate responses is a real drift risk of its own - a schema that's wrong is worse than no schema, since it fails silently instead of just being untyped. This may be layered in incrementally in a future minor version without breaking anything, since it would only add stricter typing, not change runtime behavior.
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
